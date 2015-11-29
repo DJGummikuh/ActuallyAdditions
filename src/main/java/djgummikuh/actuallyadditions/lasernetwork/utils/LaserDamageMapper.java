@@ -1,3 +1,12 @@
+/*
+ * This file ("LaserDamageMapper.java") is part of the Actually Additions Mod for Minecraft.
+ * It is created and owned by DJGummikuh and distributed
+ * under the Actually Additions License to be found at
+ * http://github.com/Ellpeck/ActuallyAdditions/blob/master/README.md
+ * View the source code at https://github.com/DJGummikuh/ActuallyAdditions
+ *
+ * © 2015 DJGummikuh
+ */
 package djgummikuh.actuallyadditions.lasernetwork.utils;
 
 import java.util.Collection;
@@ -7,6 +16,14 @@ import java.util.List;
 import ellpeck.actuallyadditions.misc.LaserRelayConnectionHandler.ConnectionPair;
 import ellpeck.actuallyadditions.util.WorldPos;
 
+/**
+ * This class maps a connection pair to find out the blocks the laser passes and
+ * to rig those with information so that when a player requests a coordinate, we
+ * can tell if it is crossing one of the lines and cause damage.
+ * 
+ * @author johannes
+ *
+ */
 public class LaserDamageMapper {
 
     public static void mapDamageVoxels(ConnectionPair pair) {
@@ -22,7 +39,7 @@ public class LaserDamageMapper {
         double multiY = getInsecMult(startY, diffY);
         double multiZ = getInsecMult(startZ, diffZ);
         Axis whereToGo = getLowestNumber(multiX, multiY, multiZ);
-        switch(whereToGo) {
+        switch (whereToGo) {
         case X:
         case XY:
         case XZ:
@@ -34,22 +51,32 @@ public class LaserDamageMapper {
         case Z:
             break;
         }
-        // 1 = startX + diffX * ?
-        // (1 - startX) / diffX = ?
-        // ? = (1 - startX) / diffX;
 
     }
 
     /**
-     * Enumeration denoting the 3 axises.
+     * Enumeration denoting the 3 axises and all combinations of those.
      * 
      * @author johannes
      *
      */
-    private static enum Axis {
+    public static enum Axis {
         X, Y, Z, XY, XZ, YZ, XYZ;
     }
 
+    /**
+     * This method returns the axis in which walking the diff vector will cause
+     * a boundary crossing first.
+     * 
+     * @param multX
+     *            the multiplier for the vector to run in X.
+     * @param multY
+     *            the multiplier for the vector to run in Y.
+     * @param multZ
+     *            the multiplier for the vector to run in Z.
+     * @return the axis in which we will hit the next wall the quickest.
+     *         combined Axis mean we're hitting an edge or even a corner.
+     */
     private static Axis getLowestNumber(double multX, double multY, double multZ) {
         double absX = Math.abs(multX);
         double absY = Math.abs(multY);
@@ -76,10 +103,9 @@ public class LaserDamageMapper {
             } else {
                 return Axis.YZ;
             }
+        } else {
+            return Axis.Z;
         }
-        // should never be reached, all combinations should create one valid
-        // return value before.
-        return Axis.XYZ;
     }
 
     /**
