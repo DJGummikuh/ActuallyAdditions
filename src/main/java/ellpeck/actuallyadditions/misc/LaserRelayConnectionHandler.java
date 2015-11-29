@@ -220,6 +220,22 @@ public class LaserRelayConnectionHandler{
             }
             return new ConnectionPair(pos[0], pos[1]);
         }
+        
+        /**
+         * Returns the beginning of the relay link.
+         * @return the beginning of the relay link.
+         */
+        public WorldPos getStart() {
+            return firstRelay;
+        }
+        
+        /**
+         * Returns the end of the relay link.
+         * @return the end of the relay link.
+         */
+        public WorldPos getEnd() {
+            return secondRelay;
+        }
 
         public boolean contains(WorldPos relay){
             return (this.firstRelay != null && this.firstRelay.isEqual(relay)) || (this.secondRelay != null && this.secondRelay.isEqual(relay));
