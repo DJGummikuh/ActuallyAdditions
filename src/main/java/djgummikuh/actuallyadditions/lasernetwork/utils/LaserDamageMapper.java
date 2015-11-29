@@ -26,32 +26,142 @@ import ellpeck.actuallyadditions.util.WorldPos;
  */
 public class LaserDamageMapper {
 
+    public static boolean debug = false;
+
     public static void mapDamageVoxels(ConnectionPair pair) {
         WorldPos start = pair.getStart();
+        int coordX = start.getX();
+        int coordY = start.getY();
+        int coordZ = start.getZ();
         WorldPos end = pair.getEnd();
-        int diffX = end.getX() - start.getX();
-        int diffY = end.getY() - start.getY();
-        int diffZ = end.getZ() - start.getZ();
+        print("Going from " + coordX + "," + coordY + "," + coordZ + " to "
+                + end.getX() + "," + end.getY() + "," + end.getZ());
+        int diffX = end.getX() - coordX;
+        int diffY = end.getY() - coordY;
+        int diffZ = end.getZ() - coordZ;
         double startX = 0.5;
         double startY = 0.5;
         double startZ = 0.5;
-        double multiX = getInsecMult(startX, diffX);
-        double multiY = getInsecMult(startY, diffY);
-        double multiZ = getInsecMult(startZ, diffZ);
-        Axis whereToGo = getLowestNumber(multiX, multiY, multiZ);
-        switch (whereToGo) {
-        case X:
-        case XY:
-        case XZ:
-        case XYZ:
-            break;
-        case YZ:
-        case Y:
-            break;
-        case Z:
-            break;
+        double distanceSquared = diffX * diffX + diffY * diffY + diffZ * diffZ;
+        int counter = 1;
+        while (distanceSquared > 0) {
+            double oldStartX = startX;
+            double oldStartY = startY;
+            double oldStartZ = startZ;
+            print("Distance left: " + distanceSquared);
+            boolean upX = diffX > 0;
+            boolean upY = diffY > 0;
+            boolean upZ = diffZ > 0;
+
+            double multiX = getInsecMult(startX, diffX);
+            double multiY = getInsecMult(startY, diffY);
+            double multiZ = getInsecMult(startZ, diffZ);
+
+            Axis whereToGo = getLowestNumber(multiX, multiY, multiZ);
+            print("Going to " + whereToGo);
+            switch (whereToGo) {
+            case X:
+                coordX += upX ? 1 : -1;
+                startX = 0;
+                startY = (startY + (diffY * multiX)) % 1.0;
+                startZ = (startZ + (diffZ * multiX)) % 1.0;
+                break;
+            case Y:
+                coordY += upY ? 1 : -1;
+                startX = (startX + (diffX * multiY)) % 1.0;
+                startY = 0;
+                startZ = (startZ + (diffZ * multiY)) % 1.0;
+                break;
+            case Z:
+                coordZ += upZ ? 1 : -1;
+                startX = (startX + (diffX * multiZ)) % 1.0;
+                startY = (startY + (diffY * multiZ)) % 1.0;
+                startZ = 0;
+                break;
+            case XY:
+                coordX += upX ? 1 : -1;
+                coordY += upY ? 1 : -1;
+                startX = 0;
+                startY = 0;
+                startZ = (startZ + (diffZ * multiX)) % 1.0;
+                break;
+            case XZ:
+                coordX += upX ? 1 : -1;
+                coordZ += upZ ? 1 : -1;
+                startX = 0;
+                startY = (startY + (diffY * multiX)) % 1.0;
+                startZ = 0;
+                break;
+            case YZ:
+                coordY += upY ? 1 : -1;
+                coordZ += upZ ? 1 : -1;
+                startX = (startX + (diffX * multiY)) % 1.0;
+                startY = 0;
+                startZ = 0;
+                break;
+            case XYZ:
+                coordX += upX ? 1 : -1;
+                coordY += upY ? 1 : -1;
+                coordZ += upZ ? 1 : -1;
+                startX = 0;
+                startY = 0;
+                startZ = 0;
+                break;
+            }
+
+            handleBlock(coordX, coordY, coordZ, oldStartX, oldStartY,
+                    oldStartZ, startX, startY, startZ);
+
+            print("Step " + counter + ": I'm now at " + coordX + "," + coordY
+                    + "," + coordZ);
+            multiX = getInsecMult(startX, diffX);
+            multiY = getInsecMult(startY, diffY);
+            multiZ = getInsecMult(startZ, diffZ);
+            // We can use squared distance here. It's MUCH cheaper and for our
+            // check
+            // > 1.0 it doesn't make a difference (since 1*1 = 1)
+            distanceSquared = (end.getX() - coordX) * (end.getX() - coordX)
+                    + (end.getY() - coordY) * (end.getY() - coordY)
+                    + (end.getZ() - coordZ) * (end.getZ() - coordZ);
+            counter++;
         }
 
+    }
+
+    /**
+     * This method takes the block coordinates and the inner-block vector
+     * endpoints and writes them to the map so we can query for it.
+     * 
+     * @param locX
+     *            the x coordinate of this block
+     * @param locY
+     *            the y coordinate of this block
+     * @param locZ
+     *            the z coordinate of this block
+     * @param fromX
+     *            the x coordinate of the inner vector start poimt
+     * @param fromY
+     *            the y coordinate of the inner vector start poimt
+     * @param fromZ
+     *            the y coordinate of the inner vector start poimt
+     * @param toX
+     *            the x coordinate of the inner vector end poimt
+     * @param toY
+     *            the y coordinate of the inner vector end poimt
+     * @param toZ
+     *            the z coordinate of the inner vector end poimt
+     */
+    private static void handleBlock(int locX, int locY, int locZ, double fromX,
+            double fromY, double fromZ, double toX, double toY, double toZ) {
+        if (toX == 0)
+            toX++;
+        if (toY == 0)
+            toY++;
+        if (toZ == 0)
+            toZ++;
+        print("In-Block coordinates are now " + locX + "," + locY + "," + locZ);
+        print("Handling in-Block vector from " + fromX + "," + fromY + ","
+                + fromZ + " to " + toX + "," + toY + "," + toZ);
     }
 
     /**
@@ -62,6 +172,11 @@ public class LaserDamageMapper {
      */
     public static enum Axis {
         X, Y, Z, XY, XZ, YZ, XYZ;
+
+        @Override
+        public String toString() {
+            return this.name();
+        };
     }
 
     /**
@@ -124,8 +239,15 @@ public class LaserDamageMapper {
      *         parallel to this axis).
      */
     private static double getInsecMult(double relStart, int diff) {
-        // if relStart equals 1, the following caluclation would return NaN so
+        // If relStart equals 0.0, we are starting on a wall and need to reach
+        // the OTHER wall.
+        // This means that we need to treat it as if it were 0.0
+        if (relStart == 1.0) {
+            relStart = 0.0;
+        }
+        // if diff equals 0, the following caluclation would return NaN so
         // we catch it beforehand.
+
         if (diff == 0) {
             return Double.MAX_VALUE;
         }
@@ -166,6 +288,18 @@ public class LaserDamageMapper {
             this.x = theX;
             this.y = theY;
             this.z = theZ;
+        }
+    }
+
+    /**
+     * Prints out log messages. Can be supressed by not setting debug to TRUE.
+     * 
+     * @param message
+     *            the message to log
+     */
+    private static void print(String message) {
+        if (debug) {
+            System.out.println(message);
         }
     }
 }
