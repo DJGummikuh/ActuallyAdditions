@@ -8,3 +8,7 @@
 /*.iws
 /lib
 /classes
+/bin/
+.classpath
+.project
+.settings/
